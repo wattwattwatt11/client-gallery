@@ -1,0 +1,23 @@
+{
+  "name": "photo-gallery",
+  "version": "1.0.0",
+  "description": "Self-hosted client photo gallery for photographers: proofing, delivery, downloads and visit stats",
+  "license": "AGPL-3.0-only",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "type": "commonjs",
+  "dependencies": {
+    "archiver": "^8.0.0",
+    "cookie-parser": "^1.4.7",
+    "express": "^5.3.0",
+    "multer": "^2.4.0",
+    "sharp": "^0.35.5",
+    "sortablejs": "1.15.6"
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "private": true
+}

@@ -1,0 +1,17 @@
+# dependencies
+node_modules/
+
+# your photos, database and secrets — never commit these
+data/
+.env
+*.db
+*.db-*
+logs/
+
+# personal / machine-specific files
+change-admin-password.sh
+lcz-post.md
+mac-launchagents-disabled/
+
+# OS
+.DS_Store

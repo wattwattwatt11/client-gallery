@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gallery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+<style>
+  /* 密码页 */
+  #pw { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: #111 center/cover no-repeat; }
+  #pw::before { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,.45); backdrop-filter: blur(6px); }
+  #pw form { position: relative; text-align: center; color: #fff; padding: 24px; width: 100%; max-width: 380px; }
+  #pw h1 { font-family: var(--serif); font-weight: 300; font-size: 44px; margin: 0 0 6px; letter-spacing: .02em; }
+  #pw p { opacity: .8; font-size: 13px; letter-spacing: .15em; margin: 0 0 32px; }
+  #pw input { width: 100%; padding: 14px; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.5); color: #fff; text-align: center; letter-spacing: .2em; outline: none; margin-bottom: 12px; }
+  #pw input::placeholder { color: rgba(255,255,255,.6); letter-spacing: .1em; }
+  #pw .btn { border-color: #fff; color: #fff; width: 100%; padding: 14px; }
+  #pw .btn:hover { background: #fff; color: #111; }
+  #pw .err { color: #ffb3b3; font-size: 13px; min-height: 20px; margin-top: 10px; }
+
+  /* 封面 */
+  /* 封面：center 居中 / left 左下 / split 分屏 / frame 相框 / none 无封面 */
+  #hero { position: relative; color: var(--ink); }
+  #hero .cover-img { background: #ddd8d0 center/cover no-repeat; }
+  #hero .inner { position: relative; text-align: center; padding: 0 24px; }
+  #hero h1 { font-family: var(--serif); font-weight: 300; font-size: clamp(40px, 7vw, 84px); margin: 0; letter-spacing: .02em; line-height: 1.05; }
+  #hero .sub { margin: 14px 0 0; font-size: 13px; letter-spacing: .3em; text-transform: uppercase; opacity: .75; }
+  #hero .btn { margin-top: 36px; padding: 12px 32px; }
+
+  #hero.cover-center, #hero.cover-left { height: 100vh; height: 100svh; display: flex; align-items: flex-end; justify-content: center; color: #fff; }
+  .cover-center .cover-img, .cover-left .cover-img { position: absolute; inset: 0; }
+  .cover-center .cover-img::after, .cover-left .cover-img::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0) 40%, rgba(0,0,0,.55)); }
+  .cover-center .inner { padding-bottom: 12vh; }
+  #hero.cover-left { justify-content: flex-start; }
+  .cover-left .inner { text-align: left; padding: 0 6vw 10vh; }
+  .cover-left .cover-img::after { background: linear-gradient(to top right, rgba(0,0,0,.6), rgba(0,0,0,0) 55%); }
+  .cover-center .btn, .cover-left .btn { border-color: #fff; color: #fff; }
+  .cover-center .btn:hover, .cover-left .btn:hover { background: #fff; color: #111; }
+
+  #hero.cover-split { display: grid; grid-template-columns: 1.15fr 1fr; height: 100vh; height: 100svh; }
+  .cover-split .inner { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 0 6vw; }
+
+  #hero.cover-frame { padding: 4vw 4vw 0; }
+  .cover-frame .cover-img { height: 74vh; height: 74svh; }
+  .cover-frame .inner { padding: 48px 24px 16px; }
+
+  #hero.cover-none { padding: 14vh 24px 4vh; }
+  .cover-none .cover-img { display: none; }
+
+  /* 导航 */
+  nav { position: sticky; top: 0; z-index: 50; background: rgba(250,248,245,.94); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+  nav .bar { max-width: 1600px; margin: 0 auto; display: flex; align-items: center; gap: 16px; padding: 14px 24px; }
+  nav .brand { font-family: var(--serif); font-size: 22px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
+  nav .tabs { display: flex; gap: 4px; align-items: center; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+  nav .tabs::-webkit-scrollbar { display: none; }
+  nav .tab-sep { flex: none; width: 1px; height: 16px; background: var(--line); margin: 0 18px; }
+  nav .tab { background: none; border: 0; padding: 8px 12px; font-size: 13px; letter-spacing: .06em; color: var(--muted); border-bottom: 1px solid transparent; white-space: nowrap; }
+  nav .tab.active { color: var(--ink); border-bottom-color: var(--ink); }
+  nav .tab .n { font-size: 11px; opacity: .7; margin-left: 2px; }
+  nav .actions { flex: 1; display: flex; justify-content: flex-end; }
+  .menu { position: relative; }
+  .menu .list { position: absolute; right: 0; top: calc(100% + 6px); background: var(--surface); border: 1px solid var(--line); min-width: 200px; box-shadow: 0 10px 30px rgba(0,0,0,.08); }
+  .menu .list a { display: block; padding: 12px 16px; font-size: 13px; text-decoration: none; }
+  .menu .list a:hover { background: var(--bg); }
+  .menu .list a small { color: var(--muted); margin-left: 6px; }
+
+  main { max-width: 1600px; margin: 0 auto; padding: 24px 24px 140px; }
+  .notice { text-align: center; color: var(--muted); font-size: 14px; line-height: 1.8; margin: 8px auto 28px; max-width: 640px; }
+  .notice strong { color: var(--ink); font-weight: 500; }
+  .notice.done { color: #3d7a4f; }
+  .empty { text-align: center; color: var(--muted); padding: 80px 0; font-family: var(--serif); font-size: 22px; }
+
+  .tile .overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.35), transparent 40%); opacity: 0; transition: opacity .2s; }
+  .tile:hover .overlay { opacity: 1; }
+  .tile .acts { position: absolute; right: 8px; bottom: 8px; display: flex; gap: 4px; opacity: 0; transition: opacity .2s; }
+  .tile:hover .acts, .tile.heart-on .acts { opacity: 1; }
+  .tile .acts button, .tile .acts a { width: 36px; height: 36px; border-radius: 50%; border: 0; background: rgba(255,255,255,.92); display: flex; align-items: center; justify-content: center; color: var(--ink); }
+  .tile.heart-on .acts .dl { display: none; }
+  .tile:hover .acts .dl { display: flex; }
+  .tile .note-dot { position: absolute; left: 8px; bottom: 8px; background: rgba(255,255,255,.92); font-size: 11px; padding: 3px 8px; border-radius: 10px; }
+
+  /* 底部选片栏 */
+  #selbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; background: var(--ink); color: #fff; padding: 14px 24px calc(14px + env(safe-area-inset-bottom)); display: flex; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap; }
+  #selbar .count { font-size: 14px; letter-spacing: .05em; }
+  #selbar .count b { font-family: var(--serif); font-size: 26px; font-weight: 400; margin: 0 4px; }
+  #selbar .btn { border-color: rgba(255,255,255,.6); color: #fff; }
+  #selbar .btn:hover { background: #fff; color: var(--ink); }
+  #selbar .btn.solid { background: #fff; color: var(--ink); border-color: #fff; }
+  body.at-hero #selbar { transform: translateY(100%); }
+  #selbar { transition: transform .3s; }
+
+  /* 灯箱 */
+  #lb { position: fixed; inset: 0; z-index: 100; background: var(--bg); display: flex; flex-direction: column; }
+  #lb .top { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; gap: 8px; }
+  #lb .top .name { font-size: 12px; color: var(--muted); letter-spacing: .05em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #lb .top .tools { display: flex; gap: 4px; align-items: center; }
+  #lb .iconbtn { width: 42px; height: 42px; border: 0; background: none; display: flex; align-items: center; justify-content: center; color: var(--ink); border-radius: 50%; text-decoration: none; }
+  #lb .iconbtn:hover { background: rgba(0,0,0,.05); }
+  #lb .stage { flex: 1; position: relative; min-height: 0; display: flex; align-items: center; justify-content: center; padding: 0 64px; touch-action: pan-y; }
+  #lb .stage img { max-width: 100%; max-height: 100%; object-fit: contain; box-shadow: 0 4px 30px rgba(0,0,0,.08); user-select: none; -webkit-user-drag: none; }
+  #lb .nav { position: absolute; top: 0; bottom: 0; width: 64px; border: 0; background: none; color: var(--ink); display: flex; align-items: center; justify-content: center; }
+  #lb .nav.prev { left: 0; } #lb .nav.next { right: 0; }
+  #lb .nav .icon { width: 28px; height: 28px; stroke-width: 1.2; }
+  #lb .bottom { padding: 10px 16px calc(14px + env(safe-area-inset-bottom)); text-align: center; min-height: 52px; }
+  #lb .counter { font-size: 12px; color: var(--muted); letter-spacing: .1em; }
+  #lb textarea { width: 100%; max-width: 560px; border: 1px solid var(--line); background: var(--surface); padding: 10px 12px; font-size: 13px; resize: none; outline: none; margin-top: 8px; }
+  #lb textarea:focus { border-color: var(--ink); }
+
+  @media (max-width: 760px) {
+    nav .bar { flex-wrap: wrap; padding: 10px 16px; gap: 6px; }
+    nav .brand { font-size: 18px; flex-basis: 60%; }
+    nav .actions { flex: 0; order: 2; }
+    nav .tabs { order: 3; width: 100%; overflow-x: auto; }
+    nav .tabs { -webkit-mask-image: linear-gradient(to right, #000 85%, transparent); mask-image: linear-gradient(to right, #000 85%, transparent); padding-right: 40px; }
+    nav .tab-sep { margin: 0 8px; }
+    main { padding: 16px 6px 160px; }
+    #hero.cover-split { grid-template-columns: 1fr; grid-template-rows: 64svh auto; height: auto; }
+    .cover-split .inner { padding: 40px 24px 24px; }
+    .cover-frame .cover-img { height: 62svh; }
+    .cover-frame .inner, .cover-split .inner { padding-top: 32px; }
+    .tile .acts { opacity: 1; }
+    .tile .acts .dl { display: none !important; }
+    .tile .overlay { display: none; }
+    #lb .stage { padding: 0; }
+    #lb .nav { display: none; }
+    #selbar { gap: 10px; padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); }
+    #selbar .btn { padding: 8px 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="pw" class="hidden">
+  <form id="pwForm">
+    <h1 id="pwTitle"></h1>
+    <p id="pwDate"></p>
+    <input type="password" id="pwInput" placeholder="请输入相册密码" autocomplete="current-password" required>
+    <button class="btn" type="submit">进入相册</button>
+    <div class="err" id="pwErr"></div>
+  </form>
+</div>
+
+<div id="app" class="hidden">
+  <header id="hero">
+    <div class="cover-img" id="coverImg"></div>
+    <div class="inner">
+      <h1 id="title"></h1>
+      <p class="sub" id="subtitle"></p>
+      <button class="btn" onclick="document.querySelector('nav').scrollIntoView({behavior:'smooth'})">查看相册 · View Gallery</button>
+    </div>
+  </header>
+
+  <nav>
+    <div class="bar">
+      <div class="brand" id="brand"></div>
+      <div class="tabs" id="tabs"></div>
+      <div class="actions">
+        <div class="menu" id="dlMenu">
+          <button class="btn small" id="dlBtn"><svg class="icon"><use href="#i-download"/></svg>下载</button>
+          <div class="list hidden" id="dlList"></div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <div class="notice" id="notice"></div>
+    <div id="grid"></div>
+    <div class="empty hidden" id="empty"></div>
+  </main>
+
+  <div id="selbar" class="hidden">
+    <span class="count">已选<b id="selCount">0</b><span id="selLimit"></span></span>
+    <button class="btn small" id="viewSel">查看已选</button>
+    <button class="btn small solid" id="submitSel">提交选片</button>
+  </div>
+</div>
+
+<div id="lb" class="hidden">
+  <div class="top">
+    <span class="name" id="lbName"></span>
+    <div class="tools">
+      <button class="iconbtn" id="lbHeart" title="选这张 (F)"><svg class="icon heart"><use href="#i-heart"/></svg></button>
+      <a class="iconbtn" id="lbDl" title="下载原图"><svg class="icon"><use href="#i-download"/></svg></a>
+      <button class="iconbtn" id="lbClose" title="关闭 (Esc)"><svg class="icon"><use href="#i-x"/></svg></button>
+    </div>
+  </div>
+  <div class="stage" id="lbStage">
+    <button class="nav prev" id="lbPrev"><svg class="icon"><use href="#i-left"/></svg></button>
+    <img id="lbImg" alt="">
+    <button class="nav next" id="lbNext"><svg class="icon"><use href="#i-right"/></svg></button>
+  </div>
+  <div class="bottom">
+    <div class="counter" id="lbCounter"></div>
+    <textarea id="lbNote" rows="2" class="hidden" placeholder="给摄影师的精修备注（可选），例如：帮我修一下手臂、换个天空……"></textarea>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-9.3-9.2C1.4 7.9 3.6 4.5 7 4.5c2 0 3.6 1.1 5 3 1.4-1.9 3-3 5-3 3.4 0 5.6 3.4 4.3 6.8-1.8 4.6-9.3 9.2-9.3 9.2z"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 19.5h14"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+</svg>
+
+<script>
+const gid = location.pathname.split('/').pop();
+const $ = (id) => document.getElementById(id);
+let G, photos = [], folders = [], favs = new Map(), tab = null, view = [], cur = -1;
+
+function toast(msg) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2600);
+}
+async function api(method, url, body) {
+  const r = await fetch(url, { method, headers: body ? { 'Content-Type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw Object.assign(new Error(data.error || '出错了'), { data, status: r.status });
+  return data;
+}
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function fmtDate(d) {
+  if (!d) return '';
+  const dt = new Date(d + 'T00:00:00');
+  return isNaN(dt) ? d : dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+async function load() {
+  try {
+    const data = await api('GET', '/api/g/' + gid);
+    G = data.gallery; photos = data.photos; folders = data.folders || [];
+    favs = new Map(data.favorites.map((f) => [f.photo_id, f.note]));
+    $('pw').classList.add('hidden'); $('app').classList.remove('hidden');
+    render();
+  } catch (e) {
+    if (e.data?.error === 'password') {
+      const g = e.data.gallery;
+      document.title = g.title;
+      $('pwTitle').textContent = g.title; $('pwDate').textContent = fmtDate(g.event_date);
+      if (g.cover_id) Object.assign($('pw').style, { backgroundImage: `url(/img/${g.cover_id}/web)`, backgroundPosition: g.cover_focus || '50% 50%' });
+      $('pw').classList.remove('hidden');
+      $('pwInput').focus();
+    } else {
+      document.body.innerHTML = `<div class="empty">${esc(e.message)}</div>`;
+    }
+  }
+}
+$('pwForm').onsubmit = async (ev) => {
+  ev.preventDefault();
+  try { await api('POST', `/api/g/${gid}/auth`, { password: $('pwInput').value }); load(); }
+  catch (e) { $('pwErr').textContent = e.message; }
+};
+
+const byset = (s) => photos.filter((p) => p.set_name === s);
+// 摄影师关闭「提供精修」时，不出现 ♡ 选片、我的选片和提交
+const proofOn = () => !!G.offer_retouch;
+
+function render() {
+  document.title = G.title;
+  $('title').textContent = $('brand').textContent = G.title;
+  $('subtitle').textContent = [G.subtitle, fmtDate(G.event_date)].filter(Boolean).join(' · ');
+  $('hero').className = 'cover-' + (G.cover_style || 'center');
+  if (G.cover_id) Object.assign($('coverImg').style, { backgroundImage: `url(/img/${G.cover_id}/web)`, backgroundPosition: G.cover_focus || '50% 50%' });
+  // 已交付精修时默认先看精修，否则先看全部照片选片
+  if (!tab || (!viewFor(tab).length && tab !== 'favorites')) tab = byset('retouched').length && G.submitted_at ? 'retouched' : 'original';
+  renderTabs(); renderGrid(); renderSelbar(); renderDownloads();
+}
+
+// 标签：tab = 'retouched' | 'favorites' | 'original'（全部照片）| 'f:<文件夹id>' | 'f:none'（其他）
+function viewFor(t) {
+  if (t === 'favorites') return byset('original').filter((p) => favs.has(p.id));
+  if (t === 'f:none') return byset('original').filter((p) => !p.folder_id);
+  if (t.startsWith('f:')) return byset('original').filter((p) => p.folder_id === +t.slice(2));
+  return byset(t);
+}
+function renderTabs() {
+  // 左组：精修 + 我的选片；右组：全部照片 + 各文件夹
+  const groupA = [], groupB = [];
+  if (byset('retouched').length) groupA.push(['retouched', '精修', byset('retouched').length]);
+  if (byset('original').length && proofOn()) groupA.push(['favorites', '♥ 我的选片', favs.size]);
+  groupB.push(['original', '全部照片', byset('original').length]);
+  for (const f of folders) {
+    const n = viewFor('f:' + f.id).length;
+    if (n) groupB.push(['f:' + f.id, esc(f.name), n]);
+  }
+  const other = viewFor('f:none').length;
+  if (folders.length && other && other < byset('original').length) groupB.push(['f:none', '其他', other]);
+  const btn = ([k, label, n]) => `<button class="tab ${k === tab ? 'active' : ''}" data-k="${k}">${label}<span class="n">${n}</span></button>`;
+  $('tabs').innerHTML = groupA.map(btn).join('') + (groupA.length ? '<span class="tab-sep"></span>' : '') + groupB.map(btn).join('');
+  $('tabs').querySelectorAll('.tab').forEach((b) => b.onclick = () => { tab = b.dataset.k; renderTabs(); renderGrid(); renderDownloads(); });
+  $('tabs').querySelector('.tab.active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+}
+
+function renderNotice() {
+  const n = $('notice'); n.className = 'notice';
+  const proofing = proofOn() && byset('original').length && tab !== 'retouched';
+  if (!proofing) { n.innerHTML = tab === 'retouched' ? '精修完成的照片，点击图片可查看大图与下载 ✨' : ''; return; }
+  if (G.submitted_at) {
+    n.classList.add('done');
+    n.innerHTML = `✓ 已提交 <strong>${favs.size}</strong> 张选片，摄影师正在为你精修。如需修改请联系摄影师。`;
+  } else {
+    n.innerHTML = `点击照片上的 ♡ 挑选要精修的照片${G.select_limit ? `（共可选 <strong>${G.select_limit}</strong> 张）` : ''}，<br>打开大图后可以给摄影师留下修图备注，选好后点击底部「提交选片」。`;
+  }
+}
+
+function renderGrid() {
+  renderNotice();
+  view = viewFor(tab);
+  // 排列：justified 等高行 / masonry 瀑布流 / square 方格
+  // 照片大小：small 小（与最初版本一样）/ regular 标准 / large 大
+  const style = G.grid_style || 'justified', size = G.thumb_size || 'regular', mobile = innerWidth < 760;
+  const grid = $('grid');
+  const W = grid.clientWidth || innerWidth;
+  const target = { small: 280, regular: 380, large: 520 }[size]; // 电脑上每列的目标宽度
+  const cols = mobile
+    ? (style === 'square' ? { small: 4, regular: 3, large: 2 } : { small: 3, regular: 2, large: 1 })[size]
+    : Math.max(2, Math.round(W / target));
+  const H = (mobile ? { small: 150, regular: 190, large: 240 } : { small: 280, regular: 360, large: 460 })[size];
+  grid.className = 'grid-' + style + (G.grid_spacing === 'large' ? ' gap-large' : '');
+  grid.style.setProperty('--cols', cols);
+  const tile = (p, i) => {
+    const r = (p.width / p.height) || 1.5, on = favs.has(p.id);
+    const canHeart = p.set_name === 'original' && proofOn();
+    const box = style === 'justified' ? `style="width:${r * H}px;flex-grow:${r}"` : '';
+    const pad = style === 'square' ? 100 : 100 / r;
+    // 小图 800px、大图 2400px（长边），让浏览器按显示尺寸挑选，视网膜屏也清晰
+    const tw = r >= 1 ? 800 : Math.round(800 * r), ww = r >= 1 ? 2400 : Math.round(2400 * r);
+    const shown = style === 'justified' ? `${Math.round(r * H)}px` : `${Math.ceil(100 / cols)}vw`;
+    return `<div class="tile ${on ? 'heart-on' : ''}" data-i="${i}" ${box}>
+      <i style="display:block;padding-bottom:${pad}%"></i>
+      <img loading="lazy" src="/img/${p.id}/thumb" srcset="/img/${p.id}/thumb ${tw}w, /img/${p.id}/web ${ww}w" sizes="${shown}" alt="${esc(p.filename)}" onload="this.classList.add('loaded')">
+      <div class="overlay"></div>
+      ${on && favs.get(p.id) ? '<span class="note-dot">有备注</span>' : ''}
+      <div class="acts">
+        ${G.allow_download ? `<a class="dl" href="/img/${p.id}/full" download title="下载原图" onclick="event.stopPropagation()"><svg class="icon"><use href="#i-download"/></svg></a>` : ''}
+        ${canHeart ? `<button class="hb ${on ? 'heart-on' : ''}" title="选这张"><svg class="icon heart"><use href="#i-heart"/></svg></button>` : ''}
+      </div>
+    </div>`;
+  };
+  if (style === 'masonry') {
+    // 按顺序放进当前最短的一列，保持从左到右的阅读顺序
+    const columns = Array.from({ length: cols }, () => ({ h: 0, html: '' }));
+    view.forEach((p, i) => {
+      const c = columns.reduce((a, b) => (b.h < a.h ? b : a));
+      c.html += tile(p, i); c.h += (p.height / p.width) || 0.67;
+    });
+    grid.innerHTML = columns.map((c) => `<div class="mcol">${c.html}</div>`).join('');
+  } else {
+    grid.innerHTML = view.map(tile).join('');
+  }
+  grid.querySelectorAll('.tile').forEach((t) => {
+    const i = +t.dataset.i;
+    t.onclick = () => openLb(i);
+    const hb = t.querySelector('.hb');
+    if (hb) hb.onclick = (e) => { e.stopPropagation(); toggleFav(view[i]); };
+  });
+  const empty = $('empty');
+  empty.classList.toggle('hidden', view.length > 0);
+  empty.textContent = tab === 'favorites' ? '还没有选择照片 — 点击照片上的 ♡ 开始挑选' : '照片即将上传，敬请期待';
+}
+
+function renderSelbar() {
+  const show = proofOn() && byset('original').length > 0 && !G.submitted_at;
+  $('selbar').classList.toggle('hidden', !show);
+  $('selCount').textContent = favs.size;
+  $('selLimit').textContent = G.select_limit ? ` / ${G.select_limit} 张` : ' 张';
+  $('submitSel').disabled = favs.size === 0;
+}
+$('viewSel').onclick = () => { tab = 'favorites'; renderTabs(); renderGrid(); renderDownloads(); document.querySelector('nav').scrollIntoView({ behavior: 'smooth' }); };
+$('submitSel').onclick = async () => {
+  const short = G.select_limit && favs.size < G.select_limit ? `\n（你还可以再选 ${G.select_limit - favs.size} 张）` : '';
+  if (!confirm(`确认提交这 ${favs.size} 张照片进行精修吗？提交后将无法再修改。${short}`)) return;
+  try { await api('POST', `/api/g/${gid}/submit`); G.submitted_at = new Date().toISOString(); toast('已提交，谢谢！摄影师会尽快为你精修 ✨'); render(); }
+  catch (e) { toast(e.message); }
+};
+
+function renderDownloads() {
+  $('dlMenu').classList.toggle('hidden', !G.allow_download);
+  const items = [];
+  const nr = byset('retouched').length, no = byset('original').length;
+  if (nr) items.push(['retouched', '下载全部精修', nr]);
+  if (no) items.push(['original', '下载全部照片', no]);
+  if (favs.size && proofOn()) items.push(['favorites', '下载我选的照片', favs.size]);
+  if (nr && no) items.push(['', '下载全部（精修 + 原片）', nr + no]);
+  if (tab.startsWith('f:') && tab !== 'f:none') {
+    const f = folders.find((x) => x.id === +tab.slice(2));
+    if (f) items.unshift([`original&folder=${f.id}`, `下载「${esc(f.name)}」`, viewFor(tab).length]);
+  }
+  $('dlList').innerHTML = items.map(([k, label, n]) => `<a href="/api/g/${gid}/download${k ? '?set=' + k : ''}">${label}<small>${n} 张</small></a>`).join('');
+}
+$('dlBtn').onclick = (e) => { e.stopPropagation(); $('dlList').classList.toggle('hidden'); };
+document.addEventListener('click', () => $('dlList').classList.add('hidden'));
+
+async function toggleFav(p) {
+  if (G.submitted_at) return toast('选片已提交，如需修改请联系摄影师');
+  const on = favs.has(p.id);
+  try {
+    if (on) { await api('DELETE', `/api/g/${gid}/favorites/${p.id}`); favs.delete(p.id); }
+    else { await api('PUT', `/api/g/${gid}/favorites/${p.id}`, { note: '' }); favs.set(p.id, ''); }
+  } catch (e) { return toast(e.message); }
+  renderTabs(); renderSelbar(); renderDownloads();
+  if (tab === 'favorites' && on && $('lb').classList.contains('hidden')) renderGrid();
+  else updateTile(p);
+  if (cur >= 0) updateLb();
+}
+function updateTile(p) {
+  const i = view.indexOf(p); if (i < 0) return;
+  const t = $('grid').querySelector(`.tile[data-i="${i}"]`); if (!t) return;
+  const on = favs.has(p.id);
+  t.classList.toggle('heart-on', on);
+  t.querySelector('.hb')?.classList.toggle('heart-on', on);
+  t.querySelector('.note-dot')?.remove();
+  if (on && favs.get(p.id)) t.insertAdjacentHTML('beforeend', '<span class="note-dot">有备注</span>');
+}
+
+// ---------- 灯箱 ----------
+function openLb(i) { cur = i; $('lb').classList.remove('hidden'); document.body.style.overflow = 'hidden'; updateLb(); }
+function closeLb() {
+  saveNote();
+  cur = -1; $('lb').classList.add('hidden'); document.body.style.overflow = '';
+  if (tab === 'favorites') renderGrid();
+}
+function updateLb() {
+  const p = view[cur]; if (!p) return closeLb();
+  $('lbImg').src = `/img/${p.id}/web`;
+  // 停留超过 1 秒才算看过这张（快速翻页不计）
+  clearTimeout(updateLb._t);
+  updateLb._t = setTimeout(() => { if (view[cur] === p) fetch(`/api/g/${gid}/view/${p.id}`, { method: 'POST' }).catch(() => {}); }, 1000);
+  $('lbName').textContent = p.filename;
+  $('lbCounter').textContent = `${cur + 1} / ${view.length}`;
+  const canHeart = p.set_name === 'original' && proofOn();
+  $('lbHeart').classList.toggle('hidden', !canHeart);
+  $('lbHeart').classList.toggle('heart-on', favs.has(p.id));
+  $('lbDl').classList.toggle('hidden', !G.allow_download);
+  $('lbDl').href = `/img/${p.id}/full`; $('lbDl').setAttribute('download', '');
+  const note = $('lbNote');
+  note.classList.toggle('hidden', !(canHeart && favs.has(p.id)) || (!!G.submitted_at && !favs.get(p.id)));
+  note.disabled = !!G.submitted_at;
+  note.value = favs.get(p.id) || '';
+  note.dataset.pid = p.id;
+  [view[cur - 1], view[cur + 1]].forEach((n) => { if (n) new Image().src = `/img/${n.id}/web`; });
+}
+async function saveNote() {
+  const note = $('lbNote'), pid = +note.dataset.pid;
+  if (!pid || !favs.has(pid) || G.submitted_at || note.value === (favs.get(pid) || '')) return;
+  try { await api('PUT', `/api/g/${gid}/favorites/${pid}`, { note: note.value }); favs.set(pid, note.value); updateTile(photos.find((p) => p.id === pid)); }
+  catch (e) { toast(e.message); }
+}
+$('lbNote').onblur = saveNote;
+const go = (d) => { saveNote(); if (view[cur + d]) { cur += d; updateLb(); } };
+$('lbPrev').onclick = () => go(-1);
+$('lbNext').onclick = () => go(1);
+$('lbClose').onclick = closeLb;
+$('lbHeart').onclick = () => toggleFav(view[cur]);
+document.addEventListener('keydown', (e) => {
+  if (cur < 0 || e.target.tagName === 'TEXTAREA') return;
+  if (e.key === 'ArrowLeft') go(-1);
+  else if (e.key === 'ArrowRight') go(1);
+  else if (e.key === 'Escape') closeLb();
+  else if (e.key.toLowerCase() === 'f' && view[cur].set_name === 'original' && proofOn()) toggleFav(view[cur]);
+});
+let tx = null;
+$('lbStage').addEventListener('touchstart', (e) => { tx = e.touches[0].clientX; }, { passive: true });
+$('lbStage').addEventListener('touchend', (e) => {
+  if (tx === null) return;
+  const dx = e.changedTouches[0].clientX - tx; tx = null;
+  if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1);
+});
+new IntersectionObserver(([e]) => document.body.classList.toggle('at-hero', e.intersectionRatio > 0.5 && ['center', 'left', 'split'].includes(G?.cover_style || 'center')), { threshold: [0, 0.5, 1] }).observe($('hero'));
+let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => G && renderGrid(), 200); });
+
+load();
+</script>
+</body>
+</html>

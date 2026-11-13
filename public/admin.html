@@ -1,0 +1,849 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>相册后台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+<style>
+  header.top { border-bottom: 1px solid var(--line); background: var(--surface); }
+  header.top .bar { max-width: 1280px; margin: 0 auto; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  header.top h1 { font-family: var(--serif); font-weight: 400; font-size: 26px; margin: 0; cursor: pointer; }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 32px 24px 80px; }
+  h2 { font-family: var(--serif); font-weight: 400; font-size: 32px; margin: 0 0 4px; }
+  h3 { font-size: 13px; letter-spacing: .12em; color: var(--muted); font-weight: 500; margin: 0 0 14px; text-transform: uppercase; }
+  .row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .between { justify-content: space-between; }
+  .muted { color: var(--muted); font-size: 13px; }
+
+  #login { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+  #login form { width: 100%; max-width: 340px; padding: 24px; text-align: center; }
+  #login h1 { font-family: var(--serif); font-weight: 300; font-size: 40px; margin: 0 0 28px; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 24px; margin-top: 24px; }
+  .card { background: var(--surface); border: 1px solid var(--line); cursor: pointer; transition: box-shadow .2s; }
+  .card:hover { box-shadow: 0 10px 30px rgba(0,0,0,.06); }
+  .card .cover { aspect-ratio: 3/2; background: #ece8e2 center/cover no-repeat; }
+  .card .body { padding: 14px 16px 16px; }
+  .card .t { font-family: var(--serif); font-size: 22px; margin-bottom: 4px; }
+  .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); color: var(--muted); margin-right: 4px; }
+  .badge.ok { background: #eaf4ec; border-color: #cfe6d4; color: #3d7a4f; }
+  .badge.warn { background: #fdf3e6; border-color: #f1dcbc; color: #a5701f; }
+
+  .panel { background: var(--surface); border: 1px solid var(--line); padding: 24px; margin-bottom: 24px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px; }
+  .share { display: flex; gap: 8px; align-items: stretch; }
+  .share input { flex: 1; padding: 10px 12px; border: 1px solid var(--line); background: var(--bg); min-width: 0; }
+
+  .drop { border: 1.5px dashed var(--line); padding: 28px; text-align: center; color: var(--muted); font-size: 14px; transition: all .2s; cursor: pointer; background: var(--bg); }
+  .drop.over { border-color: var(--ink); color: var(--ink); background: #f3efe9; }
+  .progress { height: 3px; background: var(--line); margin-top: 12px; overflow: hidden; }
+  .progress i { display: block; height: 100%; background: var(--ink); width: 0; transition: width .2s; }
+
+  .thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin-top: 16px; }
+  .thumb { position: relative; aspect-ratio: 1; background: #ece8e2 center/cover no-repeat; }
+  .thumb .fn { position: absolute; left: 0; right: 0; bottom: 0; font-size: 10px; padding: 3px 6px; background: rgba(0,0,0,.5); color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .thumb .ops { position: absolute; top: 4px; right: 4px; display: none; gap: 4px; }
+  .thumb:hover .ops { display: flex; }
+  .thumb .ops button { border: 0; background: rgba(255,255,255,.92); font-size: 11px; padding: 3px 7px; }
+  .thumb .fav { position: absolute; top: 4px; left: 4px; color: var(--heart); font-size: 16px; text-shadow: 0 0 3px #fff; }
+  .thumb.cover { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .thumb.sel { outline: 3px solid var(--ink); outline-offset: 2px; }
+  .thumb.sel::after { content: '✓'; position: absolute; top: 4px; left: 4px; width: 22px; height: 22px; border-radius: 50%; background: var(--ink); color: #fff; font-size: 13px; display: flex; align-items: center; justify-content: center; }
+  #thumbs .thumb { cursor: pointer; }
+
+  .fbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .fchip { background: var(--surface); border: 1px solid var(--line); padding: 7px 14px; font-size: 13px; color: var(--muted); display: inline-flex; gap: 6px; align-items: center; }
+  .fchip span { font-size: 11px; opacity: .7; }
+  .fchip i { font-style: normal; font-size: 10px; background: #fdf3e6; color: #a5701f; padding: 1px 5px; }
+  .fchip.active { border-color: var(--ink); color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+  .fchip.add { border-style: dashed; }
+  .fchip[draggable] { cursor: grab; }
+  .fchip.dragging { opacity: .4; }
+  .fchip.dropping { border-color: var(--accent); background: #f3efe9; }
+  .fops { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; font-size: 13px; margin: -2px 0 10px; }
+  .fops > span { margin-right: 8px; }
+  .fhint { font-size: 12px; margin: 0 0 12px; }
+  .selbar { position: sticky; bottom: 12px; z-index: 5; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--ink); color: #fff; padding: 10px 16px; margin-top: 16px; font-size: 13px; }
+  .selbar select { margin-left: 6px; padding: 5px 8px; border: 0; color: var(--ink); }
+  .selbar .btn.solid { background: #fff; color: var(--ink); border-color: #fff; }
+  .selbar .btn.ghost { color: #fff; }
+  .selbar .btn.ghost:hover { background: rgba(255,255,255,.12); color: #fff; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  td, th { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; }
+  td img { width: 64px; height: 48px; object-fit: cover; display: block; }
+  textarea.list { width: 100%; height: 90px; padding: 10px; border: 1px solid var(--line); background: var(--bg); font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+  .tabs2 { display: flex; gap: 20px; border-bottom: 1px solid var(--line); margin-bottom: 20px; }
+  .tabs2 button { background: none; border: 0; padding: 10px 0; color: var(--muted); border-bottom: 2px solid transparent; font-size: 14px; }
+  .tabs2 button.active { color: var(--ink); border-bottom-color: var(--ink); }
+
+  dialog { border: 1px solid var(--line); padding: 28px; width: min(480px, calc(100% - 32px)); }
+  dialog::backdrop { background: rgba(0,0,0,.3); }
+  dialog.wide { width: min(1000px, calc(100% - 32px)); max-height: 85vh; }
+  #pickGrid .thumb { cursor: pointer; }
+  #pickGrid .thumb:hover { opacity: .85; }
+
+  .design { display: grid; grid-template-columns: minmax(260px, 1fr) 1.4fr; gap: 32px; }
+  .dlabel { font-size: 13px; margin: 0 0 10px; }
+  .opts + .dlabel, .opts + .row { margin-top: 22px; }
+  .focus-wrap { display: flex; gap: 12px; align-items: flex-start; }
+  .focus { position: relative; background: #ece8e2 center/cover no-repeat; cursor: crosshair; flex-shrink: 0; }
+  .focus.wide { width: calc(100% - 92px); aspect-ratio: 16/10; }
+  .focus.tall { width: 80px; aspect-ratio: 9/19; }
+  .focus em { position: absolute; left: 6px; top: 6px; font-style: normal; font-size: 10px; background: rgba(255,255,255,.85); padding: 1px 6px; }
+  .focus .dot { position: absolute; width: 18px; height: 18px; margin: -9px 0 0 -9px; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0,0,0,.3), 0 2px 6px rgba(0,0,0,.3); pointer-events: none; }
+  .opts { display: flex; flex-wrap: wrap; gap: 10px; }
+  .opt { background: none; border: 1px solid var(--line); padding: 8px 8px 6px; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+  .opt svg { width: 80px; height: 56px; display: block; background: var(--bg); }
+  .opt:hover { border-color: var(--muted); }
+  .opt.active { border-color: var(--ink); color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+  .offer { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 13px; margin-bottom: 16px; padding: 12px 14px; background: var(--bg); border: 1px solid var(--line); }
+  .seg { display: inline-flex; border: 1px solid var(--line); }
+  .seg button { background: none; border: 0; padding: 7px 16px; font-size: 13px; color: var(--muted); }
+  .seg button.active { background: var(--ink); color: #fff; }
+  .sortbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px; margin-top: 16px; }
+  #sortDlg { width: min(1200px, calc(100% - 32px)); max-height: 92vh; padding: 0; }
+  #sortDlg .shead { position: sticky; top: 0; z-index: 2; background: var(--surface); border-bottom: 1px solid var(--line); padding: 18px 24px 14px; }
+  #sortDlg .sbody { padding: 8px 24px 24px; }
+  #sortDlg h4 { font-size: 13px; font-weight: 500; margin: 18px 0 8px; color: var(--muted); }
+  .sortlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; min-height: 40px; }
+  .sortlist .thumb { cursor: grab; user-select: none; }
+  .sortlist .thumb .n { position: absolute; top: 3px; left: 3px; font-size: 10px; background: rgba(255,255,255,.9); padding: 0 5px; }
+  .sortlist .thumb.picked { outline: 3px solid var(--accent); outline-offset: 1px; }
+  .sortlist .thumb.ghost { opacity: .35; }
+  /* 访问数据 */
+  .stathead { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+  .stathead h3 { margin: 0; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 22px; }
+  .tile2 { border: 1px solid var(--line); padding: 12px 14px; background: var(--bg); }
+  .tile2 b { display: block; font-family: var(--serif); font-size: 30px; font-weight: 400; line-height: 1.15; }
+  .tile2 span { font-size: 12px; color: var(--muted); }
+  .tile2 small { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .chart { position: relative; }
+  .chart svg { display: block; overflow: visible; }
+  .chart .bar { fill: #b0743a; }
+  .chart .hit:hover + .bar, .chart .bar.on { fill: #8f5b2a; }
+  .chart .grid { stroke: var(--line); stroke-width: 1; }
+  .chart text { font-size: 11px; fill: var(--muted); font-family: var(--sans); }
+  .chart .tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 6px 20px rgba(0,0,0,.08); padding: 8px 10px; font-size: 12px; white-space: nowrap; transform: translate(-50%, -100%); z-index: 3; }
+  .chart .tip div { display: flex; justify-content: space-between; gap: 14px; color: var(--muted); }
+  .chart .tip div b { color: var(--ink); font-weight: 600; }
+  .chart .tip .d { color: var(--ink); margin-bottom: 4px; font-weight: 500; }
+  .stattable { margin-top: 10px; font-size: 12px; }
+  .stattable summary { cursor: pointer; color: var(--muted); }
+  .stattable table { margin-top: 8px; }
+  .cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 24px; }
+  .topph { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
+  .topph .thumb .fn { font-size: 10px; }
+  .rank tr { cursor: pointer; }
+  .rank tr:hover td { background: var(--bg); }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  @media (max-width: 760px) { .cols2 { grid-template-columns: 1fr; } .hide-sm { display: none; } }
+  @media (max-width: 860px) { .design { grid-template-columns: 1fr; } }
+  @media (max-width: 700px) { .grid2 { grid-template-columns: 1fr; } .wrap { padding: 20px 16px 60px; } }
+</style>
+</head>
+<body>
+
+<div id="login" class="hidden">
+  <form id="loginForm">
+    <h1>Gallery Admin</h1>
+    <div class="field"><input type="password" id="loginPw" placeholder="管理员密码" autofocus required></div>
+    <button class="btn solid" style="width:100%">登录</button>
+    <p class="muted" id="loginErr"></p>
+  </form>
+</div>
+
+<div id="app" class="hidden">
+  <header class="top"><div class="bar">
+    <h1 onclick="location.hash=''">Gallery Admin</h1>
+    <button class="btn ghost small" id="logout">退出</button>
+  </div></header>
+  <div class="wrap" id="view"></div>
+</div>
+
+<dialog id="pickDlg" class="wide">
+  <div class="row between" style="margin-bottom:16px"><h2>选择封面照片</h2><button class="btn ghost small" onclick="pickDlg.close()">关闭</button></div>
+  <div class="thumbs" id="pickGrid"></div>
+</dialog>
+
+<dialog id="newDlg">
+  <form id="newForm" method="dialog">
+    <h2 style="margin-bottom:20px">新建相册</h2>
+    <div class="field"><label>标题 *</label><input name="title" placeholder="例如：Jason & Mia" required></div>
+    <div class="field"><label>副标题</label><input name="subtitle" placeholder="例如：Prewedding · Kyoto"></div>
+    <div class="grid2">
+      <div class="field"><label>拍摄日期</label><input name="event_date" type="date"></div>
+      <div class="field"><label>可选精修张数（0 = 不限）</label><input name="select_limit" type="number" min="0" value="30"></div>
+    </div>
+    <div class="field"><label>访问密码（留空则凭链接即可访问）</label><input name="password" placeholder="例如：0520"></div>
+    <div class="row" style="justify-content:flex-end;margin-top:8px">
+      <button class="btn ghost" value="cancel" formnovalidate>取消</button>
+      <button class="btn solid" value="ok">创建</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="sortDlg">
+  <div class="shead">
+    <div class="row between"><h2 style="margin:0">手动调整顺序 <span class="muted" id="sortSet" style="font-family:var(--sans);font-size:14px"></span></h2>
+      <div class="row"><button class="btn ghost small" id="sortCancel">取消</button><button class="btn solid small" id="sortSave">保存顺序</button></div></div>
+    <div class="row" style="margin-top:10px;gap:8px">
+      <span class="muted">先整体排一次：</span>
+      <button class="btn small" id="sortByTaken">按拍摄时间</button>
+      <button class="btn small" id="sortByName">按文件名</button>
+      <span class="muted" style="margin-left:8px">然后拖动照片调整 · 点一下可选中多张，一起拖动</span>
+    </div>
+  </div>
+  <div class="sbody" id="sortBody"></div>
+</dialog>
+
+<div class="toast" id="toast"></div>
+<script src="/vendor/Sortable.min.js"></script>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2600); }
+async function api(method, url, body) {
+  const r = await fetch(url, { method, headers: body ? { 'Content-Type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined });
+  const data = await r.json().catch(() => ({}));
+  if (r.status === 401 && !url.endsWith('/login')) { showLogin(); throw new Error('请先登录'); }
+  if (!r.ok) throw new Error(data.error || '出错了');
+  return data;
+}
+const fmtSize = (b) => b > 1e9 ? (b / 1e9).toFixed(1) + ' GB' : (b / 1e6).toFixed(1) + ' MB';
+const shareUrl = (id) => `${location.origin}/g/${id}`;
+
+function showLogin() { $('app').classList.add('hidden'); $('login').classList.remove('hidden'); }
+$('loginForm').onsubmit = async (e) => {
+  e.preventDefault();
+  try { await api('POST', '/api/admin/login', { password: $('loginPw').value }); $('login').classList.add('hidden'); start(); }
+  catch (err) { $('loginErr').textContent = err.message; }
+};
+$('logout').onclick = async () => { await api('POST', '/api/admin/logout'); showLogin(); };
+
+async function start() {
+  const { admin } = await api('GET', '/api/admin/me');
+  if (!admin) return showLogin();
+  $('app').classList.remove('hidden');
+  route();
+}
+addEventListener('hashchange', route);
+function route() {
+  selected.clear(); curFolder = 'all';
+  const id = location.hash.slice(1);
+  id ? renderGallery(id) : renderList();
+}
+
+// ---------- 相册列表 ----------
+async function renderList() {
+  const list = await api('GET', '/api/admin/galleries');
+  $('view').innerHTML = `
+    <div class="row between"><div><h2>我的相册</h2><div class="muted">${list.length} 个相册</div></div>
+      <button class="btn solid" id="newBtn">＋ 新建相册</button></div>
+    <div class="panel" id="siteStats" style="margin-top:24px"></div>
+    <div class="cards">${list.map((g) => `
+      <div class="card" data-id="${g.id}">
+        <div class="cover" style="${g.cover_id ? `background-image:url(/img/${g.cover_id}/thumb)` : ''}"></div>
+        <div class="body">
+          <div class="t">${esc(g.title)}</div>
+          <div class="muted" style="margin-bottom:10px">${esc(g.event_date || '')} ${esc(g.subtitle || '')}</div>
+          <span class="badge">原片 ${g.original_count}</span><span class="badge">精修 ${g.retouched_count}</span>
+          ${g.submitted_at ? `<span class="badge ok">已选 ${g.favorite_count} ✓</span>` : g.favorite_count ? `<span class="badge warn">选片中 ${g.favorite_count}</span>` : ''}
+        </div>
+      </div>`).join('') || '<p class="muted">还没有相册，点击右上角新建一个吧。</p>'}
+    </div>`;
+  $('newBtn').onclick = () => { $('newForm').reset(); $('newDlg').showModal(); };
+  renderStats($('siteStats'), null);
+  document.querySelectorAll('.card').forEach((c) => c.onclick = () => location.hash = c.dataset.id);
+}
+$('newDlg').addEventListener('close', async () => {
+  if ($('newDlg').returnValue !== 'ok') return;
+  const body = Object.fromEntries(new FormData($('newForm')));
+  try { const { id } = await api('POST', '/api/admin/galleries', body); location.hash = id; }
+  catch (e) { toast(e.message); }
+});
+
+// ---------- 相册详情 ----------
+let D, setTab = 'original';
+async function renderGallery(id) {
+  try { D = await api('GET', '/api/admin/galleries/' + id); }
+  catch (e) { toast(e.message); location.hash = ''; return; }
+  const g = D.gallery;
+  const favIds = new Set(D.favorites.map((f) => f.photo_id));
+  const cnt = (s) => D.photos.filter((p) => p.set_name === s).length;
+  const totalSize = D.photos.reduce((a, p) => a + (p.size || 0), 0);
+
+  $('view').innerHTML = `
+    <div class="row between" style="margin-bottom:24px">
+      <div><a href="#" class="muted" style="text-decoration:none">← 全部相册</a><h2>${esc(g.title)}</h2>
+        <div class="muted">${D.photos.length} 张照片 · ${fmtSize(totalSize)}</div></div>
+      <a class="btn" href="/g/${g.id}" target="_blank">预览客户页面 ↗</a>
+    </div>
+
+    <div class="panel">
+      <h3>分享给客户</h3>
+      <div class="share"><input readonly value="${shareUrl(g.id)}" id="shareUrl"><button class="btn solid" id="copyShare">复制链接</button></div>
+      <p class="muted" style="margin:10px 0 0">${g.password ? `访问密码：<b style="color:var(--ink)">${esc(g.password)}</b>` : '未设置密码，任何拿到链接的人都能访问'}</p>
+    </div>
+
+    <div class="panel" id="galStats"></div>
+
+    <div class="panel">
+      <div class="row between" style="margin-bottom:14px"><h3 style="margin:0">相册设计</h3><a class="muted" href="/g/${g.id}" target="_blank">在新窗口预览效果 ↗</a></div>
+      <div class="design">
+        <div>
+          <div class="dlabel">封面照片 <span class="muted">· 点击图片设置焦点（裁切时保留的位置）</span></div>
+          <div class="focus-wrap">
+            <div class="focus wide" id="focusWide"><span class="dot"></span><em>电脑</em></div>
+            <div class="focus tall" id="focusTall"><span class="dot"></span><em>手机</em></div>
+          </div>
+          <button class="btn small" id="pickCover" style="margin-top:12px">更换封面照片</button>
+        </div>
+        <div>
+          <div class="dlabel">封面样式</div>
+          <div class="opts" data-field="cover_style">${DESIGN_OPTS.cover_style.map(optCard).join('')}</div>
+          <div class="dlabel">照片排列</div>
+          <div class="opts" data-field="grid_style">${DESIGN_OPTS.grid_style.map(optCard).join('')}</div>
+          <div class="row" style="gap:28px">
+            <div><div class="dlabel">照片大小</div><div class="seg" data-field="thumb_size"><button data-v="small">小</button><button data-v="regular">标准</button><button data-v="large">大</button></div></div>
+            <div><div class="dlabel">照片间距</div><div class="seg" data-field="grid_spacing"><button data-v="regular">标准</button><button data-v="large">宽松</button></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>客户选片 ${!g.offer_retouch ? '<span class="badge warn">未提供精修</span>' : g.submitted_at ? `<span class="badge ok">已提交 ✓ ${esc(g.submitted_at)}</span>` : `<span class="badge">${D.favorites.length ? '客户选片中' : '等待客户选片'}</span>`}</h3>
+      <div id="favBox"></div>
+    </div>
+
+    <div class="panel">
+      <div class="tabs2">
+        <button data-s="original" class="${setTab === 'original' ? 'active' : ''}">原片（调色后） ${cnt('original')}</button>
+        <button data-s="retouched" class="${setTab === 'retouched' ? 'active' : ''}">精修 ${g.offer_retouch ? cnt('retouched') : '<span class="badge warn">不提供</span>'}</button>
+      </div>
+      ${setTab === 'retouched' ? `<div class="offer">
+        <span>这个相册提供精修吗？</span>
+        <div class="seg" id="offerSeg"><button data-v="1" class="${g.offer_retouch ? 'active' : ''}">提供精修</button><button data-v="0" class="${!g.offer_retouch ? 'active' : ''}">不提供精修</button></div>
+        <span class="muted">${g.offer_retouch ? '客户可以 ♡ 选片、留修图备注、提交选片，精修照片也会显示给客户。' : '客户页面不会出现选片和精修，只能浏览和下载原片。'}</span>
+      </div>` : ''}
+      <div id="folderBox"></div>
+      <div class="drop" id="drop">
+        <div id="dropText">把${setTab === 'original' ? '调好色的原片' : '精修好的照片'}拖到这里，或 <u>点击选择文件</u><br><small>JPG / PNG / TIFF / WebP，同名文件会自动替换</small></div>
+        <div class="progress hidden" id="prog"><i></i></div>
+        <input type="file" id="file" multiple accept="image/*" hidden>
+      </div>
+      <div class="sortbar">
+        <span>照片顺序</span>
+        <div class="seg" id="sortSeg"><button data-v="taken">按拍摄时间</button><button data-v="filename">按文件名</button><button data-v="manual">手动</button></div>
+        <button class="btn small" id="sortEdit">拖动调整顺序…</button>
+        <span class="muted" id="sortHint"></span>
+      </div>
+      <div class="thumbs" id="thumbs"></div>
+      <div class="selbar hidden" id="selBar">
+        <span>已选 <b id="selN">0</b> 张</span>
+        <label>移动到 <select id="moveTo"></select></label>
+        <button class="btn small solid" id="moveGo">移动</button>
+        <button class="btn small ghost" id="selAll">全选当前</button>
+        <button class="btn small ghost" id="selNone">取消选择</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>相册设置</h3>
+      <form id="settings">
+        <div class="grid2">
+          <div class="field"><label>标题</label><input name="title" value="${esc(g.title)}" required></div>
+          <div class="field"><label>副标题</label><input name="subtitle" value="${esc(g.subtitle)}"></div>
+          <div class="field"><label>拍摄日期</label><input name="event_date" type="date" value="${esc(g.event_date)}"></div>
+          <div class="field"><label>可选精修张数（0 = 不限）</label><input name="select_limit" type="number" min="0" value="${g.select_limit}"></div>
+          <div class="field"><label>访问密码（留空 = 不需要密码）</label><input name="password" value="${esc(g.password)}"></div>
+          <div class="field"><label>允许客户下载原图</label>
+            <select name="allow_download"><option value="1" ${g.allow_download ? 'selected' : ''}>允许</option><option value="0" ${!g.allow_download ? 'selected' : ''}>不允许（只能在线看）</option></select></div>
+        </div>
+        <div class="row between">
+          <button class="btn solid">保存设置</button>
+          <button type="button" class="btn danger small" id="delGallery">删除相册</button>
+        </div>
+      </form>
+    </div>`;
+
+  $('copyShare').onclick = () => copy(shareUrl(g.id) + (g.password ? `\n密码：${g.password}` : ''), '链接已复制');
+  setupDesign(g);
+  renderStats($('galStats'), g.id);
+  if ($('offerSeg')) $('offerSeg').querySelectorAll('button').forEach((b) => b.onclick = async () => {
+    await api('PATCH', '/api/admin/galleries/' + id, { offer_retouch: +b.dataset.v });
+    toast(+b.dataset.v ? '已开启精修，客户可以选片' : '已关闭精修，客户页面不再显示选片');
+    renderGallery(id);
+  });
+  document.querySelectorAll('.tabs2 button').forEach((b) => b.onclick = () => { setTab = b.dataset.s; renderGallery(id); });
+
+  // 选片
+  const favs = D.favorites.map((f) => ({ ...f, photo: D.photos.find((p) => p.id === f.photo_id) })).filter((f) => f.photo)
+    .sort((a, b) => a.photo.filename.localeCompare(b.photo.filename, undefined, { numeric: true }));
+  const names = favs.map((f) => f.photo.filename.replace(/\.[^.]+$/, ''));
+  $('favBox').innerHTML = favs.length ? `
+    <p class="muted">客户已选 <b style="color:var(--ink)">${favs.length}</b>${g.select_limit ? ` / ${g.select_limit}` : ''} 张。复制下面的文件名，粘贴到 Lightroom 图库筛选器（文本 → 文件名 → 包含）即可一次筛出所有已选照片。</p>
+    <textarea class="list" readonly id="favNames">${esc(names.join(', '))}</textarea>
+    <div class="row" style="margin:10px 0 20px">
+      <button class="btn small solid" id="copyNames">复制文件名（Lightroom）</button>
+      <button class="btn small" id="csv">下载 CSV（含备注）</button>
+      <a class="btn small" href="/api/g/${g.id}/download?set=favorites">打包下载已选原图</a>
+      ${g.submitted_at ? `<button class="btn small" id="unlock">解锁，允许客户修改</button>` : ''}
+    </div>
+    <table><tr><th></th><th>文件名</th><th>客户备注</th></tr>
+      ${favs.map((f) => `<tr><td><img src="/img/${f.photo_id}/thumb" loading="lazy"></td><td>${esc(f.photo.filename)}</td><td>${esc(f.note) || '<span class="muted">—</span>'}</td></tr>`).join('')}
+    </table>` : '<p class="muted">客户还没有选择照片。把分享链接发给客户，他们在「全部照片」里点 ♡ 即可选片。</p>';
+  if (favs.length) {
+    $('copyNames').onclick = () => copy($('favNames').value, `已复制 ${favs.length} 个文件名`);
+    $('csv').onclick = () => {
+      const rows = [['filename', 'note'], ...favs.map((f) => [f.photo.filename, f.note || ''])];
+      const csv = '﻿' + rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+      const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([csv], { type: 'text/csv' })), download: `${g.title}-选片.csv` });
+      a.click();
+    };
+    if ($('unlock')) $('unlock').onclick = async () => { await api('PATCH', '/api/admin/galleries/' + id, { submitted_at: null }); toast('已解锁'); renderGallery(id); };
+  }
+
+  // 文件夹（只用于原片）
+  const folders = D.folders;
+  const folderById = new Map(folders.map((f) => [f.id, f]));
+  if (typeof curFolder === 'number' && !folderById.has(curFolder)) curFolder = 'all';
+  const originals = D.photos.filter((p) => p.set_name === 'original');
+  const inFolder = (p) => curFolder === 'all' || (curFolder === 'none' ? !p.folder_id : p.folder_id === curFolder);
+  if (setTab === 'original') renderFolders(id, folders, originals);
+
+  // 照片
+  const list = D.photos.filter((p) => p.set_name === setTab && (setTab !== 'original' || inFolder(p)));
+  const coverId = g.cover_photo_id || D.photos.reduce((m, p) => Math.min(m, p.id), Infinity);
+  const showFolder = setTab === 'original' && curFolder === 'all' && folders.length;
+  $('thumbs').innerHTML = list.map((p) => `
+    <div class="thumb ${p.id === coverId ? 'cover' : ''} ${selected.has(p.id) ? 'sel' : ''}" data-id="${p.id}" style="background-image:url(/img/${p.id}/thumb)" title="${esc(p.filename)}${p.taken_at ? '\n拍摄：' + p.taken_at.slice(0, 19) : ''}">
+      ${favIds.has(p.id) ? '<span class="fav">♥</span>' : ''}
+      <div class="ops"><button data-cover="${p.id}">设为封面</button><button data-del="${p.id}">删除</button></div>
+      <div class="fn">${showFolder && p.folder_id ? esc(folderById.get(p.folder_id)?.name) + ' · ' : ''}${esc(p.filename)}</div>
+    </div>`).join('') || `<p class="muted">${setTab === 'original' && curFolder !== 'all' ? '这个文件夹还是空的，把照片拖到上面上传，或在「全部」里选中照片移动过来。' : ''}</p>`;
+
+  // 点选照片（Shift 连选）→ 批量移动到文件夹
+  if (setTab === 'original') {
+    let last = null;
+    $('thumbs').querySelectorAll('.thumb').forEach((t, i) => t.onclick = (e) => {
+      if (e.target.closest('.ops')) return;
+      const pid = +t.dataset.id;
+      if (e.shiftKey && last !== null) {
+        const [a, b] = [Math.min(last, i), Math.max(last, i)];
+        list.slice(a, b + 1).forEach((p) => selected.add(p.id));
+      } else if (selected.has(pid)) selected.delete(pid);
+      else selected.add(pid);
+      last = i;
+      $('thumbs').querySelectorAll('.thumb').forEach((x) => x.classList.toggle('sel', selected.has(+x.dataset.id)));
+      updateSelBar();
+    });
+    $('moveTo').innerHTML = folders.map((f) => `<option value="${f.id}">${esc(f.name)}</option>`).join('') + '<option value="">未分类</option>';
+    $('moveGo').onclick = async () => {
+      const v = $('moveTo').value;
+      await api('POST', `/api/admin/galleries/${id}/photos/move`, { photo_ids: [...selected], folder_id: v ? +v : null });
+      toast(`已移动 ${selected.size} 张到「${v ? folderById.get(+v).name : '未分类'}」`);
+      selected.clear(); renderGallery(id);
+    };
+    $('selAll').onclick = () => { list.forEach((p) => selected.add(p.id)); $('thumbs').querySelectorAll('.thumb').forEach((x) => x.classList.add('sel')); updateSelBar(); };
+    $('selNone').onclick = () => { selected.clear(); $('thumbs').querySelectorAll('.thumb').forEach((x) => x.classList.remove('sel')); updateSelBar(); };
+    updateSelBar();
+  }
+  $('thumbs').querySelectorAll('[data-cover]').forEach((b) => b.onclick = async () => {
+    await api('PATCH', '/api/admin/galleries/' + id, { cover_photo_id: +b.dataset.cover, cover_focus: '50% 50%' }); toast('封面已更新'); renderGallery(id);
+  });
+  $('thumbs').querySelectorAll('[data-del]').forEach((b) => b.onclick = async () => {
+    if (!confirm('删除这张照片？')) return;
+    await api('DELETE', '/api/admin/photos/' + b.dataset.del); renderGallery(id);
+  });
+
+  // 照片顺序
+  const setList = D.photos.filter((p) => p.set_name === setTab);
+  const noTime = setList.filter((p) => !p.taken_at).length;
+  const unplaced = g.sort_mode === 'manual' ? setList.filter((p) => p.sort_pos == null).length : 0;
+  $('sortSeg').querySelectorAll('button').forEach((b) => {
+    b.classList.toggle('active', b.dataset.v === g.sort_mode);
+    b.onclick = async () => {
+      if (b.dataset.v === g.sort_mode) return;
+      if (b.dataset.v === 'manual' && setList.every((p) => p.sort_pos == null)) return openSort(id);
+      await api('PATCH', '/api/admin/galleries/' + id, { sort_mode: b.dataset.v });
+      toast({ taken: '已改为按拍摄时间排序', filename: '已改为按文件名排序', manual: '已改为手动顺序' }[b.dataset.v]);
+      renderGallery(id);
+    };
+  });
+  $('sortEdit').onclick = () => openSort(id);
+  $('sortHint').textContent = [
+    g.sort_mode === 'taken' && noTime ? `${noTime} 张读不到拍摄时间，排在最后` : '',
+    unplaced ? `${unplaced} 张新上传的照片还没排过，暂时排在最后` : '',
+  ].filter(Boolean).join(' · ');
+
+  // 上传
+  const drop = $('drop'), file = $('file');
+  drop.onclick = (e) => { if (e.target !== file) file.click(); };
+  file.onchange = () => uploadFiles(id, [...file.files]);
+  drop.ondragover = (e) => { e.preventDefault(); drop.classList.add('over'); };
+  drop.ondragleave = () => drop.classList.remove('over');
+  drop.ondrop = (e) => { e.preventDefault(); drop.classList.remove('over'); uploadFiles(id, [...e.dataTransfer.files].filter((f) => f.type.startsWith('image/') || /\.(jpe?g|png|tiff?|webp)$/i.test(f.name))); };
+
+  // 设置
+  $('settings').onsubmit = async (e) => {
+    e.preventDefault();
+    const body = Object.fromEntries(new FormData(e.target));
+    body.select_limit = +body.select_limit || 0; body.allow_download = +body.allow_download;
+    await api('PATCH', '/api/admin/galleries/' + id, body); toast('已保存'); renderGallery(id);
+  };
+  $('delGallery').onclick = async () => {
+    if (prompt(`此操作会永久删除相册及所有照片。\n请输入相册标题「${g.title}」确认：`) !== g.title) return;
+    await api('DELETE', '/api/admin/galleries/' + id); location.hash = '';
+  };
+}
+
+// ---------- 相册设计 ----------
+const svg = (body) => `<svg viewBox="0 0 80 56">${body}</svg>`;
+const L = (x, y, w, c = '#fff') => `<rect x="${x}" y="${y}" width="${w}" height="3" rx="1.5" fill="${c}"/>`;
+const IMG = '#b9b1a5', INK = '#3a3631';
+const DESIGN_OPTS = {
+  cover_style: [
+    ['center', '居中', svg(`<rect width="80" height="56" fill="${IMG}"/>${L(22, 36, 36)}${L(30, 43, 20)}`)],
+    ['left', '左下', svg(`<rect width="80" height="56" fill="${IMG}"/>${L(8, 38, 36)}${L(8, 45, 20)}`)],
+    ['split', '分屏', svg(`<rect width="42" height="56" fill="${IMG}"/>${L(50, 24, 24, INK)}${L(54, 31, 16, INK)}`)],
+    ['frame', '相框', svg(`<rect x="8" y="6" width="64" height="34" fill="${IMG}"/>${L(24, 45, 32, INK)}${L(31, 51, 18, INK)}`)],
+    ['none', '无封面', svg(`${L(22, 12, 36, INK)}${L(30, 19, 20, INK)}<rect x="8" y="30" width="20" height="20" fill="${IMG}"/><rect x="30" y="30" width="20" height="20" fill="${IMG}"/><rect x="52" y="30" width="20" height="20" fill="${IMG}"/>`)],
+  ],
+  grid_style: [
+    ['masonry', '瀑布流', svg(`<rect x="6" y="4" width="20" height="28" fill="${IMG}"/><rect x="6" y="34" width="20" height="18" fill="${IMG}"/><rect x="30" y="4" width="20" height="16" fill="${IMG}"/><rect x="30" y="22" width="20" height="30" fill="${IMG}"/><rect x="54" y="4" width="20" height="24" fill="${IMG}"/><rect x="54" y="30" width="20" height="22" fill="${IMG}"/>`)],
+    ['justified', '等高行', svg(`<rect x="6" y="6" width="30" height="20" fill="${IMG}"/><rect x="38" y="6" width="14" height="20" fill="${IMG}"/><rect x="54" y="6" width="20" height="20" fill="${IMG}"/><rect x="6" y="30" width="16" height="20" fill="${IMG}"/><rect x="24" y="30" width="30" height="20" fill="${IMG}"/><rect x="56" y="30" width="18" height="20" fill="${IMG}"/>`)],
+    ['square', '方格', svg(`<rect x="10" y="4" width="18" height="15" fill="${IMG}"/><rect x="31" y="4" width="18" height="15" fill="${IMG}"/><rect x="52" y="4" width="18" height="15" fill="${IMG}"/><rect x="10" y="21" width="18" height="15" fill="${IMG}"/><rect x="31" y="21" width="18" height="15" fill="${IMG}"/><rect x="52" y="21" width="18" height="15" fill="${IMG}"/><rect x="10" y="38" width="18" height="15" fill="${IMG}"/><rect x="31" y="38" width="18" height="15" fill="${IMG}"/><rect x="52" y="38" width="18" height="15" fill="${IMG}"/>`)],
+  ],
+};
+const optCard = ([v, label, pic]) => `<button class="opt" data-v="${v}">${pic}<span>${label}</span></button>`;
+
+function setupDesign(g) {
+  const id = g.id;
+  const save = async (patch, msg = '已更新') => {
+    try { Object.assign(g, await api('PATCH', '/api/admin/galleries/' + id, patch)); toast(msg); }
+    catch (e) { toast(e.message); }
+  };
+  // 选项卡片 / 分段按钮
+  document.querySelectorAll('.design [data-field]').forEach((box) => {
+    const field = box.dataset.field;
+    const mark = () => box.querySelectorAll('[data-v]').forEach((b) => b.classList.toggle('active', b.dataset.v === g[field]));
+    mark();
+    box.querySelectorAll('[data-v]').forEach((b) => b.onclick = async () => { await save({ [field]: b.dataset.v }); mark(); });
+  });
+  // 封面焦点
+  const coverId = g.cover_photo_id || D.photos.reduce((m, p) => Math.min(m, p.id), Infinity);
+  const boxes = [$('focusWide'), $('focusTall')];
+  const paint = () => boxes.forEach((b) => {
+    if (coverId !== Infinity) b.style.backgroundImage = `url(/img/${coverId}/web)`;
+    b.style.backgroundPosition = g.cover_focus;
+    const [x, y] = g.cover_focus.split(' ');
+    Object.assign(b.querySelector('.dot').style, { left: x, top: y });
+  });
+  paint();
+  // 点击位置换算成整张照片上的百分比：先算出图片在框里实际铺开的大小
+  boxes.forEach((b) => b.onclick = (e) => {
+    const p = D.photos.find((x) => x.id === coverId); if (!p) return;
+    const rect = b.getBoundingClientRect(), r = p.width / p.height;
+    const scale = Math.max(rect.width / p.width, rect.height / p.height);
+    const iw = p.width * scale, ih = p.height * scale;
+    const [fx, fy] = g.cover_focus.split(' ').map(parseFloat);
+    const ox = (rect.width - iw) * fx / 100, oy = (rect.height - ih) * fy / 100;
+    const px = Math.min(100, Math.max(0, (e.clientX - rect.left - ox) / iw * 100));
+    const py = Math.min(100, Math.max(0, (e.clientY - rect.top - oy) / ih * 100));
+    g.cover_focus = `${px.toFixed(1)}% ${py.toFixed(1)}%`;
+    paint(); save({ cover_focus: g.cover_focus }, '封面焦点已更新');
+  });
+  // 更换封面
+  $('pickCover').onclick = () => {
+    $('pickGrid').innerHTML = D.photos.map((p) => `<div class="thumb ${p.id === coverId ? 'cover' : ''}" data-id="${p.id}" style="background-image:url(/img/${p.id}/thumb)" title="${esc(p.filename)}"><div class="fn">${p.set_name === 'retouched' ? '精修 · ' : ''}${esc(p.filename)}</div></div>`).join('');
+    $('pickGrid').querySelectorAll('.thumb').forEach((t) => t.onclick = async () => {
+      $('pickDlg').close();
+      await save({ cover_photo_id: +t.dataset.id, cover_focus: '50% 50%' }, '封面已更换');
+      renderGallery(id);
+    });
+    $('pickDlg').showModal();
+  };
+}
+
+// ---------- 文件夹 ----------
+let curFolder = 'all';          // 'all' | 'none' | 文件夹 id
+const selected = new Set();     // 已点选、准备移动的照片
+function updateSelBar() {
+  $('selBar').classList.toggle('hidden', !selected.size || setTab !== 'original' || !D.folders.length);
+  $('selN').textContent = selected.size;
+}
+function renderFolders(id, folders, originals) {
+  const count = (fid) => originals.filter((p) => (fid === 'none' ? !p.folder_id : p.folder_id === fid)).length;
+  const chip = (key, label, n, extra = '') =>
+    `<button class="fchip ${curFolder === key ? 'active' : ''}" data-key="${key}" ${extra}>${label}<span>${n}</span></button>`;
+  const unfiled = count('none');
+  const cur = findFolder(folders, curFolder);
+  $('folderBox').innerHTML = `
+    <div class="fbar">
+      ${chip('all', '全部', originals.length)}
+      ${folders.map((f) => chip(f.id, (f.hidden ? '<i title="客户看不到">隐藏</i>' : '') + esc(f.name), count(f.id), 'draggable="true"')).join('')}
+      ${folders.length && unfiled ? chip('none', '未分类', unfiled) : ''}
+      <button class="fchip add" id="addFolder">＋ 新建文件夹</button>
+    </div>
+    ${cur ? `<div class="fops">
+      <span>文件夹「${esc(cur.name)}」${cur.hidden ? '<b class="badge warn">客户看不到</b>' : ''}</span>
+      <button class="btn small ghost" data-op="rename">改名</button>
+      <button class="btn small ghost" data-op="hide">${cur.hidden ? '对客户公开' : '对客户隐藏'}</button>
+      <button class="btn small ghost" data-op="delete">删除文件夹</button>
+    </div>` : ''}
+    ${folders.length > 1 ? '<p class="muted fhint">拖动文件夹可调整顺序 · 点选照片（按住 Shift 可连选）可批量移动到其他文件夹</p>' : folders.length ? '<p class="muted fhint">点选照片（按住 Shift 可连选）可批量移动到其他文件夹</p>' : ''}`;
+
+  const where = cur ? `「${esc(cur.name)}」` : folders.length ? '「未分类」' : '';
+  if (!uploading) $('dropText').innerHTML = `把调好色的原片拖到这里${where ? `，会上传到${where}` : ''}，或 <u>点击选择文件</u><br><small>JPG / PNG / TIFF / WebP，同名文件会自动替换</small>`;
+
+  $('folderBox').querySelectorAll('.fchip[data-key]').forEach((b) => b.onclick = () => {
+    const k = b.dataset.key;
+    curFolder = k === 'all' || k === 'none' ? k : +k;
+    selected.clear(); renderGallery(id);
+  });
+  $('addFolder').onclick = async () => {
+    const name = prompt('新文件夹名称（例如：迎娶、敬茶、合照）');
+    if (!name?.trim()) return;
+    const { id: fid } = await api('POST', `/api/admin/galleries/${id}/folders`, { name });
+    curFolder = fid; renderGallery(id);
+  };
+  $('folderBox').querySelectorAll('[data-op]').forEach((b) => b.onclick = async () => {
+    const op = b.dataset.op;
+    if (op === 'rename') {
+      const name = prompt('文件夹新名称', cur.name);
+      if (!name?.trim() || name === cur.name) return;
+      await api('PATCH', '/api/admin/folders/' + cur.id, { name });
+    } else if (op === 'hide') {
+      await api('PATCH', '/api/admin/folders/' + cur.id, { hidden: !cur.hidden });
+      toast(cur.hidden ? '客户现在可以看到这个文件夹' : '已对客户隐藏');
+    } else if (op === 'delete') {
+      if (!confirm(`删除文件夹「${cur.name}」？\n里面的 ${count(cur.id)} 张照片不会被删除，会移到「未分类」。`)) return;
+      await api('DELETE', '/api/admin/folders/' + cur.id);
+      curFolder = 'all';
+    }
+    renderGallery(id);
+  });
+
+  // 拖动排序
+  let dragKey = null;
+  $('folderBox').querySelectorAll('.fchip[draggable]').forEach((b) => {
+    b.ondragstart = (e) => { dragKey = +b.dataset.key; e.dataTransfer.effectAllowed = 'move'; b.classList.add('dragging'); };
+    b.ondragend = () => b.classList.remove('dragging');
+    b.ondragover = (e) => { e.preventDefault(); b.classList.add('dropping'); };
+    b.ondragleave = () => b.classList.remove('dropping');
+    b.ondrop = async (e) => {
+      e.preventDefault(); b.classList.remove('dropping');
+      const target = +b.dataset.key;
+      if (!dragKey || dragKey === target) return;
+      const ids = folders.map((f) => f.id).filter((x) => x !== dragKey);
+      ids.splice(ids.indexOf(target) + (folders.findIndex((f) => f.id === dragKey) < folders.findIndex((f) => f.id === target) ? 1 : 0), 0, dragKey);
+      await api('PUT', `/api/admin/galleries/${id}/folders/order`, { ids });
+      renderGallery(id);
+    };
+  });
+}
+// ---------- 手动排序 ----------
+const natCmp = (a, b) => a.filename.localeCompare(b.filename, undefined, { numeric: true, sensitivity: 'base' });
+const takenCmp = (a, b) => (!a.taken_at - !b.taken_at) || (a.taken_at || '').localeCompare(b.taken_at || '') || natCmp(a, b);
+let sortables = [];
+function openSort(id) {
+  const set = setTab;
+  const photos = D.photos.filter((p) => p.set_name === set); // 已按当前顺序排好
+  const byId = new Map(photos.map((p) => [p.id, p]));
+  // 原片按文件夹分组，每组各自排序（跨文件夹移动请用「移动到」）
+  const groups = set === 'original' && D.folders.length
+    ? [...D.folders.map((f) => ({ name: f.name, items: photos.filter((p) => p.folder_id === f.id) })),
+       { name: '未分类', items: photos.filter((p) => !p.folder_id) }].filter((x) => x.items.length)
+    : [{ name: '', items: photos }];
+  $('sortSet').textContent = `· ${set === 'original' ? '原片' : '精修'} ${photos.length} 张`;
+  const paint = () => {
+    sortables.forEach((s) => s.destroy());
+    $('sortBody').innerHTML = groups.map((gr, gi) => `${gr.name ? `<h4>${esc(gr.name)} · ${gr.items.length}</h4>` : ''}
+      <div class="sortlist" data-g="${gi}">${gr.items.map((p) => `<div class="thumb" data-id="${p.id}" style="background-image:url(/img/${p.id}/thumb)" title="${esc(p.filename)}${p.taken_at ? '\n拍摄：' + p.taken_at.slice(0, 19) : ''}"><span class="n"></span><div class="fn">${esc(p.filename)}</div></div>`).join('')}</div>`).join('');
+    sortables = [...$('sortBody').querySelectorAll('.sortlist')].map((el) => Sortable.create(el, {
+      animation: 150, multiDrag: true, selectedClass: 'picked', ghostClass: 'ghost', avoidImplicitDeselect: false,
+      scroll: true, scrollSensitivity: 120, scrollSpeed: 18, bubbleScroll: true, onSort: number,
+    }));
+    number();
+  };
+  // 显示序号，方便看位置
+  const number = () => { let n = 0; $('sortBody').querySelectorAll('.thumb .n').forEach((x) => x.textContent = ++n); };
+  const reorder = (cmp) => { readBack(); groups.forEach((gr) => gr.items.sort(cmp)); paint(); };
+  const readBack = () => $('sortBody').querySelectorAll('.sortlist').forEach((el) => {
+    groups[+el.dataset.g].items = [...el.children].map((t) => byId.get(+t.dataset.id));
+  });
+  $('sortByTaken').onclick = () => { reorder(takenCmp); toast('已按拍摄时间排好，可以继续拖动调整'); };
+  $('sortByName').onclick = () => { reorder(natCmp); toast('已按文件名排好，可以继续拖动调整'); };
+  $('sortCancel').onclick = () => $('sortDlg').close();
+  $('sortSave').onclick = async () => {
+    readBack();
+    try {
+      await api('PUT', `/api/admin/galleries/${id}/photos/order`, { ids: groups.flatMap((gr) => gr.items.map((p) => p.id)) });
+      $('sortDlg').close(); toast('顺序已保存，客户页面已更新'); renderGallery(id);
+    } catch (e) { toast(e.message); }
+  };
+  paint();
+  $('sortDlg').showModal();
+  $('sortDlg').scrollTop = 0;
+}
+$('sortDlg').addEventListener('close', () => { sortables.forEach((s) => s.destroy()); sortables = []; $('sortBody').innerHTML = ''; });
+
+const findFolder = (folders, key) => (typeof key === 'number' ? folders.find((f) => f.id === key) : null);
+
+let uploading = false;
+async function uploadFiles(id, files) {
+  if (!files.length || uploading) return;
+  uploading = true;
+  const set = setTab, total = files.length;
+  const folderParam = set === 'original' && typeof curFolder === 'number' ? `&folder=${curFolder}` : '';
+  let done = 0, failed = [];
+  const prog = $('prog'), text = $('dropText');
+  prog.classList.remove('hidden');
+  const update = () => { prog.firstElementChild.style.width = (done / total * 100) + '%'; text.innerHTML = `正在上传 ${done} / ${total}…<br><small>上传过程中请不要关闭页面</small>`; };
+  update();
+  addEventListener('beforeunload', block);
+  const queue = [...files];
+  const worker = async () => {
+    while (queue.length) {
+      const f = queue.shift();
+      const fd = new FormData(); fd.append('file', f);
+      try {
+        const r = await fetch(`/api/admin/galleries/${id}/photos?set=${set}${folderParam}`, { method: 'POST', body: fd });
+        if (!r.ok) failed.push(f.name + '：' + ((await r.json().catch(() => ({}))).error || r.status));
+      } catch (e) { failed.push(f.name + '：网络错误'); }
+      done++; update();
+    }
+  };
+  await Promise.all([worker(), worker(), worker()]);
+  removeEventListener('beforeunload', block);
+  uploading = false;
+  if (failed.length) alert(`${failed.length} 张上传失败：\n` + failed.join('\n'));
+  else toast(`${total} 张照片上传完成`);
+  renderGallery(id);
+}
+function block(e) { e.preventDefault(); e.returnValue = ''; }
+
+async function copy(text, msg) {
+  try { await navigator.clipboard.writeText(text); }
+  catch { const t = Object.assign(document.createElement('textarea'), { value: text }); document.body.append(t); t.select(); document.execCommand('copy'); t.remove(); }
+  toast(msg);
+}
+
+start();
+
+// ---------- 访问数据 ----------
+let statDays = 30;
+try { statDays = Number(localStorage.getItem('statDays')) || 30; } catch {}
+const TYPE_LABEL = { visit: '打开相册', zip: '打包下载', download: '单张下载' };
+const DEV_LABEL = { mobile: '手机', desktop: '电脑' };
+async function renderStats(box, gid) {
+  let s;
+  try { s = await api('GET', (gid ? `/api/admin/galleries/${gid}/stats` : '/api/admin/stats') + '?days=' + statDays); }
+  catch (e) { box.innerHTML = `<p class="muted">数据读取失败：${esc(e.message)}</p>`; return; }
+  if (!box.isConnected) return;
+  const t = s.totals;
+  const devTotal = t.mobile + t.desktop;
+  const empty = gid ? !s.all_events : !s.since;
+  box.innerHTML = `
+    <div class="stathead">
+      <h3>${gid ? '访问数据' : '网站访问数据'}</h3>
+      <div class="seg" data-days>${[7, 30, 90, 365].map((d) => `<button data-v="${d}" class="${d === statDays ? 'active' : ''}">${d === 365 ? '1 年' : d + ' 天'}</button>`).join('')}</div>
+    </div>
+    ${empty ? `<p class="muted" style="margin:-6px 0 16px">还没有访问记录。统计从这个功能上线开始，客户打开${gid ? '这个' : ''}相册后这里就会有数据（你自己登录后台时的浏览不计入）。</p>` : ''}
+    <div class="tiles">
+      <div class="tile2"><span>访问次数</span><b>${t.visits}</b><small>30 分钟内重复打开算 1 次</small></div>
+      <div class="tile2"><span>访客人数</span><b>${t.visitors}</b><small>不同的手机 / 电脑</small></div>
+      <div class="tile2"><span>放大查看照片</span><b>${t.views}</b><small>次</small></div>
+      <div class="tile2"><span>下载</span><b>${t.downloads + t.zips}</b><small>整包 ${t.zips} 次 · 单张 ${t.downloads} 张</small></div>
+      <div class="tile2"><span>手机访客</span><b>${devTotal ? Math.round(t.mobile / devTotal * 100) + '%' : '–'}</b><small>${devTotal ? `手机 ${t.mobile} · 电脑 ${t.desktop}` : '暂无'}</small></div>
+    </div>
+    <div class="dlabel">每天访问次数 <span class="muted">· 把鼠标移到柱子上看详细</span></div>
+    <div class="chart" data-chart></div>
+    <details class="stattable"><summary>查看每日明细表</summary>
+      <table><thead><tr><th>日期</th><th class="num">访问</th><th class="num">访客</th><th class="num">查看照片</th><th class="num">下载</th></tr></thead>
+      <tbody>${s.daily.filter((d) => d.visits || d.views || d.downloads).reverse().map((d) => `<tr><td>${d.day}</td><td class="num">${d.visits}</td><td class="num">${d.visitors}</td><td class="num">${d.views}</td><td class="num">${d.downloads}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">这段时间没有访问</td></tr>'}</tbody></table>
+    </details>
+    ${gid ? galleryStatsExtra(s) : siteStatsExtra(s)}`;
+  drawBars(box.querySelector('[data-chart]'), s.daily);
+  box.querySelectorAll('[data-days] button').forEach((b) => b.onclick = () => {
+    statDays = +b.dataset.v;
+    try { localStorage.setItem('statDays', statDays); } catch {}
+    box.style.opacity = .5; renderStats(box, gid).then(() => box.style.opacity = '');
+  });
+  box.querySelectorAll('.rank tr[data-id]').forEach((tr) => tr.onclick = () => location.hash = tr.dataset.id);
+}
+function siteStatsExtra(s) {
+  const rows = s.galleries.filter((g) => g.visits || g.last_visit);
+  return `<div style="margin-top:24px"><div class="dlabel">各相册（${statDays === 365 ? '1 年' : statDays + ' 天'}内）</div>
+    <table class="rank"><thead><tr><th>相册</th><th class="num">访问</th><th class="num">访客</th><th class="num hide-sm">查看照片</th><th class="num">下载</th><th class="hide-sm">最近一次访问</th></tr></thead>
+    <tbody>${rows.map((g) => `<tr data-id="${g.id}"><td>${esc(g.title)}</td><td class="num">${g.visits}</td><td class="num">${g.visitors}</td><td class="num hide-sm">${g.views}</td><td class="num">${g.downloads}</td><td class="hide-sm muted">${esc(g.last_visit || '–')}</td></tr>`).join('')
+      || '<tr><td colspan="6" class="muted">还没有相册被客户打开过</td></tr>'}</tbody></table>
+    ${s.since ? `<p class="muted" style="margin:10px 0 0">从 ${esc(s.since)} 开始统计</p>` : ''}</div>`;
+}
+function galleryStatsExtra(s) {
+  return `
+    <p class="muted" style="margin:16px 0 0">${s.first_visit ? `客户第一次打开：<b style="color:var(--ink)">${esc(s.first_visit)}</b> · 最近一次：<b style="color:var(--ink)">${esc(s.last_visit)}</b> · 累计访问 ${s.all_visits} 次、${s.all_visitors} 位访客` : '客户还没有打开过这个相册'}</p>
+    <div class="cols2">
+      <div><div class="dlabel">被放大看最多的照片 <span class="muted">（累计）</span></div>
+        ${s.top_photos.length ? `<div class="topph">${s.top_photos.map((p) => `<div class="thumb" style="background-image:url(/img/${p.id}/thumb)" title="${esc(p.filename)}"><div class="fn">👁 ${p.views}${p.downloads ? ` · ⬇ ${p.downloads}` : ''}</div></div>`).join('')}</div>` : '<p class="muted">暂无</p>'}</div>
+      <div><div class="dlabel">最近动态</div>
+        ${s.recent.length ? `<div style="max-height:320px;overflow:auto"><table><tbody>${s.recent.map((r) => `<tr><td class="muted" style="white-space:nowrap">${esc(r.time)}</td><td>${TYPE_LABEL[r.type] || r.type}${r.type === 'zip' ? ` <span class="muted">${esc(r.detail)}</span>` : r.type === 'download' ? ` <span class="muted">${esc(r.filename || '')}</span>` : ''}</td><td class="muted">${DEV_LABEL[r.device] || ''}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">暂无</p>'}</div>
+    </div>`;
+}
+// 每日柱状图（单一系列：访问次数），悬停显示当天全部数字
+function drawBars(el, daily) {
+  const W = Math.max(300, el.clientWidth || 800), H = innerWidth < 760 ? 170 : 200, L = 30, R = 6, T = 10, B = 22;
+  const max = Math.max(1, ...daily.map((d) => d.visits));
+  const step = max <= 4 ? 1 : Math.ceil(max / 4 / (max > 20 ? 5 : 1)) * (max > 20 ? 5 : 1);
+  const top = Math.ceil(max / step) * step;
+  const y = (v) => T + (H - T - B) * (1 - v / top);
+  const bw = (W - L - R) / daily.length;
+  const gap = Math.min(2, bw * 0.2);
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.setAttribute('width', W); svg.setAttribute('height', H);
+  svg.setAttribute('role', 'img'); svg.setAttribute('aria-label', '每天访问次数柱状图');
+  const add = (tag, attrs, text) => { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); if (text != null) n.textContent = text; svg.appendChild(n); return n; };
+  for (let v = 0; v <= top; v += step) {
+    add('line', { x1: L, x2: W - R, y1: y(v), y2: y(v), class: 'grid' });
+    add('text', { x: L - 6, y: y(v) + 4, 'text-anchor': 'end' }, v);
+  }
+  const labelIdx = new Set([0, Math.floor((daily.length - 1) / 2), daily.length - 1]);
+  const tip = document.createElement('div'); tip.className = 'tip hidden';
+  daily.forEach((d, i) => {
+    const x = L + i * bw;
+    const h = y(0) - y(d.visits);
+    const hit = add('rect', { x, y: T, width: bw, height: H - T - B, fill: 'transparent', class: 'hit' });
+    if (d.visits) {
+      const r = Math.min(4, (bw - gap) / 2, h);
+      const x0 = x + gap / 2, x1 = x + bw - gap / 2, y0 = y(d.visits), yb = y(0);
+      add('path', { class: 'bar', d: `M${x0},${yb} V${y0 + r} Q${x0},${y0} ${x0 + r},${y0} H${x1 - r} Q${x1},${y0} ${x1},${y0 + r} V${yb} Z`, 'pointer-events': 'none' });
+    } else add('rect', { x, y: 0, width: 0, height: 0, class: 'bar' }); // 占位，保持 hit + bar 的相邻关系
+    if (labelIdx.has(i)) add('text', { x: x + bw / 2, y: H - 6, 'text-anchor': i === 0 ? 'start' : i === daily.length - 1 ? 'end' : 'middle' }, d.day.slice(5).replace('-', '/'));
+    const show = () => {
+      tip.innerHTML = '';
+      const head = document.createElement('div'); head.className = 'd'; head.textContent = d.day; tip.appendChild(head);
+      for (const [k, label] of [['visits', '访问'], ['visitors', '访客'], ['views', '查看照片'], ['downloads', '下载']]) {
+        const row = document.createElement('div'); const b = document.createElement('b'); b.textContent = d[k];
+        row.append(label, b); tip.appendChild(row);
+      }
+      tip.style.left = Math.min(Math.max(x + bw / 2, 70), W - 70) + 'px';
+      tip.style.top = (y(d.visits) - 8) + 'px';
+      tip.classList.remove('hidden');
+    };
+    hit.addEventListener('pointerenter', show);
+    hit.addEventListener('pointerleave', () => tip.classList.add('hidden'));
+  });
+  el.innerHTML = ''; el.append(svg, tip);
+}
+</script>
+</body>
+</html>
